@@ -6,6 +6,7 @@ using System.Data.OleDb;
 using System.Drawing;
 using System.Linq;
 using System.Text;
+using System.Text.RegularExpressions;
 using System.Threading.Tasks;
 using System.Windows.Forms;
 using static System.Windows.Forms.VisualStyles.VisualStyleElement.Button;
@@ -28,6 +29,7 @@ namespace CRUDfinal
         private void frmUsuarios_Load(object sender, EventArgs e)
         {
             actualizarGrilla();
+            
         }
 
         void conectar()
@@ -69,7 +71,7 @@ namespace CRUDfinal
             try
             {
                 conectar();
-                string sql = "Select * From Usuarios";
+                string sql = "Select * From Usuarios ORDER BY Id_usuario ASC";
                 
                 using (OleDbCommand cmd = new OleDbCommand(sql, cn))
                 using (OleDbDataReader reader = cmd.ExecuteReader())
@@ -83,7 +85,7 @@ namespace CRUDfinal
                             Nombre = reader["Nombre"].ToString() ?? string.Empty,
                             DNI = Convert.ToInt32(reader["DNI"]),
                             Telefono= Convert.ToInt32(reader["Telefono"]),
-                            Direccion = reader["Dirección"].ToString() ?? string.Empty
+                            Direccion = reader["Direccion"].ToString() ?? string.Empty
                         });
                     }
                 }
@@ -101,7 +103,8 @@ namespace CRUDfinal
 
         void actualizarGrilla()
         {
-            
+
+            bloquearControles(gbDatosPersonales);
             dgvUsuarios.DataSource = null;
             buscarPersonas();
             dgvUsuarios.DataSource = usuario;
@@ -138,37 +141,97 @@ namespace CRUDfinal
             }
         }
 
+        int indiceSeleccionado = -1; // variable de clase 
         private void btnModificar_Click(object sender, EventArgs e)
         {
             if (btnModificar.Text == "Modificar")
             {
-                btnModificar.Text = "Guardar Cambios";
+                if (dgvUsuarios.SelectedRows.Count == 0)
+                {
+                    MessageBox.Show("Seleccione un usuario para modificar.", "Atención", MessageBoxButtons.OK, MessageBoxIcon.Warning);
+                    return;
+                }
+
+                indiceSeleccionado = dgvUsuarios.SelectedRows[0].Index;
+
+                desbloquearControles(gbDatosPersonales);
+                txtDNI.Enabled = false;
+
+                btnModificar.Text = "Guardar";
                 btnAgregar.Visible = false;
                 btnEliminar.Text = "Cancelar";
 
-                
                 txtNombre.Focus();
             }
             else
             {
+                if (indiceSeleccionado < 0 || indiceSeleccionado >= usuario.Count)
+                {
+                    MessageBox.Show("No se encontró el usuario a modificar.", "Error", MessageBoxButtons.OK, MessageBoxIcon.Error);
+                    return;
+                }
+
+                // Actualizar el usuario en la lista
+                
+                usuario[indiceSeleccionado].Nombre = txtNombre.Text;
+                usuario[indiceSeleccionado].Apellido = txtApellido.Text;
+                usuario[indiceSeleccionado].Telefono = Convert.ToInt32(txtTelefono.Text);
+                usuario[indiceSeleccionado].DNI = Convert.ToInt32(txtDNI.Text);
+                usuario[indiceSeleccionado].Direccion = txtDireccion.Text;
+
+                // Guardar cambios en la base de datos
+                modificarUsuario(
+                    usuario[indiceSeleccionado].Nombre = txtNombre.Text,
+                    usuario[indiceSeleccionado].Apellido = txtApellido.Text,
+                    usuario[indiceSeleccionado].Telefono = Convert.ToInt32(txtTelefono.Text),
+                    usuario[indiceSeleccionado].DNI = Convert.ToInt32(txtDNI.Text),
+                    usuario[indiceSeleccionado].Direccion = txtDireccion.Text
+                );
+
+                MessageBox.Show("Se modificó correctamente el usuario", "Modificar usuario", MessageBoxButtons.OK, MessageBoxIcon.Information);
+
                 btnModificar.Text = "Modificar";
                 btnAgregar.Visible = true;
                 btnEliminar.Text = "Eliminar";
-                
-
-                
-                int indice = dgvUsuarios.SelectedRows[0].Index;
-
-                // Actualizar usuario existente
-                usuario[indice].Nombre = txtNombre.Text;
-                usuario[indice].Apellido = txtApellido.Text;
-                usuario[indice].DNI = Convert.ToInt32(txtDNI.Text);
-                usuario[indice].Telefono = Convert.ToInt32(txtTelefono.Text);
-                usuario[indice].Direccion = txtDireccion.Text;
-
                 actualizarGrilla();
                 limpiarGrilla(gbDatosPersonales);
                 dgvUsuarios.Focus();
+            }
+
+        
+        }
+
+        void modificarUsuario(string nombre, string apellido, int telefono, int dni, string direccion)
+        {
+            try
+            {
+                conectar();
+
+                string sql = "UPDATE Usuarios SET Nombre = ?, Apellido = ?, Telefono = ?, Direccion = ? WHERE DNI=?";
+
+                using (OleDbCommand cmd = new OleDbCommand(sql, cn))
+                {
+                    cmd.Parameters.AddWithValue("?", nombre);
+                    cmd.Parameters.AddWithValue("?", apellido);
+                    cmd.Parameters.AddWithValue("?", telefono);
+                    cmd.Parameters.AddWithValue("?", direccion);
+                    cmd.Parameters.AddWithValue("?", dni);
+
+                    int filasAfectadas = cmd.ExecuteNonQuery();
+
+                    if (filasAfectadas == 0)
+                    {
+                        MessageBox.Show("No se encontró ningún usuario con ese DNI para modificar.", "Aviso", MessageBoxButtons.OK, MessageBoxIcon.Information);
+                    }
+                }
+            }
+            catch (Exception ex)
+            {
+                MessageBox.Show("Error al modificar: " + ex.Message, "Error", MessageBoxButtons.OK, MessageBoxIcon.Error);
+            }
+            finally
+            {
+                desconectar();
             }
         }
 
@@ -180,15 +243,45 @@ namespace CRUDfinal
                 btnModificar.Visible = false;
                 btnEliminar.Text = "Cancelar";
 
+
+                desbloquearControles(gbDatosPersonales);
                 
                 limpiarGrilla(gbDatosPersonales);
                 txtNombre.Focus();
             }
             else
             {
+                // Validar campos vacíos
+                if (string.IsNullOrWhiteSpace(txtNombre.Text) || string.IsNullOrWhiteSpace(txtApellido.Text) ||
+                    string.IsNullOrWhiteSpace(txtTelefono.Text) || string.IsNullOrWhiteSpace(txtDNI.Text))
+                {
+                    MessageBox.Show("Complete todos los campos antes de continuar.", "Atención", MessageBoxButtons.OK, MessageBoxIcon.Warning);
+                    return;
+                }
+
+                // Validar formato de teléfono
+                if (!Regex.IsMatch(txtTelefono.Text, @"^11\d{8}$"))
+                {
+                    MessageBox.Show("El teléfono debe comenzar con 11 y tener 10 dígitos en total.", "Error", MessageBoxButtons.OK, MessageBoxIcon.Warning);
+                    return;
+                }
+
+                // Validar formato de DNI
+                if (!Regex.IsMatch(txtDNI.Text, @"^\d{8}$"))
+                {
+                    MessageBox.Show("El DNI debe tener exactamente 8 dígitos.", "Error", MessageBoxButtons.OK, MessageBoxIcon.Warning);
+                    return;
+                }
                 btnAgregar.Text = "Agregar";
                 btnEliminar.Text = "Eliminar";
                 btnModificar.Visible = true;
+
+                // Verifica que el DNI no esta en uso
+                if (ExisteDNI(txtDNI.Text.Trim()))
+                {
+                    MessageBox.Show("Ya existe un usuario con ese DNI.", "Error", MessageBoxButtons.OK, MessageBoxIcon.Error);
+                    return;
+                }
 
                 bloquearControles(this);
 
@@ -212,12 +305,36 @@ namespace CRUDfinal
             }
         }
 
-        private void insertarUsuario(string nombre, string apellido, int telefono, int dni, string direccion)
+        private bool ExisteDNI(string dni)
         {
             try
             {
                 conectar();
-                string sql = "INSERT INTO Usuarios (Nombre, Apellido, Telefono, DNI, Dirección) VALUES (?,?,?,?,?)";
+                string sql = "SELECT COUNT(*) FROM Usuarios WHERE DNI = ?";
+                using (OleDbCommand cmd = new OleDbCommand(sql, cn))
+                {
+                    cmd.Parameters.AddWithValue("?", dni);
+                    int count = (int)cmd.ExecuteScalar();
+                    return count > 0; // true si ya existe
+                }
+            }
+            catch (Exception ex)
+            {
+                MessageBox.Show("Error al verificar el DNI: " + ex.Message, "Error", MessageBoxButtons.OK, MessageBoxIcon.Error);
+                return true; // Devuelvo true para evitar que continúe si algo sale mal
+            }
+            finally
+            {
+                desconectar();
+            }
+        }
+        private void insertarUsuario(string nombre, string apellido, int telefono, int dni, string direccion)
+        {
+            
+            try
+            {
+                conectar();
+                string sql = "INSERT INTO Usuarios (Nombre, Apellido, Telefono, DNI, Direccion) VALUES (?,?,?,?,?)";
                 
                 using (OleDbCommand cmd =new OleDbCommand (sql, cn))
                 {
@@ -248,6 +365,14 @@ namespace CRUDfinal
             {
                 if (item is TextBox txt) txt.Enabled = false;
                 
+            }
+        }
+
+        private void desbloquearControles(Control contrl)
+        {
+            foreach(Control item in contrl.Controls)
+            {
+                if (item is TextBox txt) txt.Enabled = true;
             }
         }
 
