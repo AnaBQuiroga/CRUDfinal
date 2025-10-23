@@ -128,6 +128,23 @@ namespace CRUDfinal
             }
         }
 
+        private void bloquearControles(Control control)
+        {
+            foreach (Control item in control.Controls)
+            {
+                if (item is TextBox txt) txt.Enabled = false;
+
+            }
+        }
+
+        private void desbloquearControles(Control contrl)
+        {
+            foreach (Control item in contrl.Controls)
+            {
+                if (item is TextBox txt) txt.Enabled = true;
+            }
+        }
+
         private void dgvUsuarios_RowEnter(object sender, DataGridViewCellEventArgs e)
         {
             if (dgvUsuarios.SelectedRows.Count > 0)
@@ -272,18 +289,17 @@ namespace CRUDfinal
                     MessageBox.Show("El DNI debe tener exactamente 8 dígitos.", "Error", MessageBoxButtons.OK, MessageBoxIcon.Warning);
                     return;
                 }
-                btnAgregar.Text = "Agregar";
-                btnEliminar.Text = "Eliminar";
-                btnModificar.Visible = true;
+              
 
                 // Verifica que el DNI no esta en uso
                 if (ExisteDNI(txtDNI.Text.Trim()))
                 {
                     MessageBox.Show("Ya existe un usuario con ese DNI.", "Error", MessageBoxButtons.OK, MessageBoxIcon.Error);
+                    txtDNI.Focus();
                     return;
                 }
 
-                bloquearControles(this);
+                
 
                 // Crear nuevo usuario
                 Usuarios nuevoUsuario = new Usuarios()
@@ -299,8 +315,15 @@ namespace CRUDfinal
                 usuario.Add(nuevoUsuario);
                 insertarUsuario(txtNombre.Text, txtApellido.Text,Convert.ToInt32(txtTelefono.Text), Convert.ToInt32(txtDNI.Text),txtDireccion.Text);
                 MessageBox.Show("Se inserto correctamente el nuevo usuario", "Insertar usuario", MessageBoxButtons.OK, MessageBoxIcon.Information);
-                actualizarGrilla(); // Esto actualiza DataGridView y ComboBox
+
+                btnAgregar.Text = "Agregar";
+                btnEliminar.Text = "Eliminar";
+                btnModificar.Visible = true;
+
+                bloquearControles(this);
                 limpiarGrilla(gbDatosPersonales);
+                actualizarGrilla(); // Esto actualiza DataGridView y ComboBox
+                
                 dgvUsuarios.Focus();
             }
         }
@@ -313,15 +336,15 @@ namespace CRUDfinal
                 string sql = "SELECT COUNT(*) FROM Usuarios WHERE DNI = ?";
                 using (OleDbCommand cmd = new OleDbCommand(sql, cn))
                 {
-                    cmd.Parameters.AddWithValue("?", dni);
+                    cmd.Parameters.AddWithValue("?", Convert.ToInt32(dni));
                     int count = (int)cmd.ExecuteScalar();
-                    return count > 0; // true si ya existe
+                    return count > 0;
                 }
             }
-            catch (Exception ex)
+            catch (Exception)
             {
-                MessageBox.Show("Error al verificar el DNI: " + ex.Message, "Error", MessageBoxButtons.OK, MessageBoxIcon.Error);
-                return true; // Devuelvo true para evitar que continúe si algo sale mal
+                // Si el dni coincide con uno existente se puede intentar de nuevo la operación
+                return false;
             }
             finally
             {
@@ -359,23 +382,6 @@ namespace CRUDfinal
             }
         }
 
-        private void bloquearControles(Control control)
-        {
-            foreach (Control item in control.Controls)
-            {
-                if (item is TextBox txt) txt.Enabled = false;
-                
-            }
-        }
-
-        private void desbloquearControles(Control contrl)
-        {
-            foreach(Control item in contrl.Controls)
-            {
-                if (item is TextBox txt) txt.Enabled = true;
-            }
-        }
-
         private void cmbBuscar_SelectedIndexChanged(object sender, EventArgs e)
         {
             string nombreSeleccionado = cmbBuscar.SelectedItem.ToString();
@@ -394,6 +400,79 @@ namespace CRUDfinal
             }
         }
 
+        private void btnEliminar_Click(object sender, EventArgs e)
+        {
+            if (btnEliminar.Text == "Eliminar")
+            {
+                // Verificar selección
+                if (dgvUsuarios.CurrentRow == null)
+                {
+                    MessageBox.Show("Seleccioná un usuario para eliminar.", "Atención", MessageBoxButtons.OK, MessageBoxIcon.Warning);
+                    return;
+                }
 
+                // Confirmar
+                DialogResult respuesta = MessageBox.Show(
+                    "¿Estás segura de que querés eliminar este usuario?",
+                    "Confirmar eliminación",
+                    MessageBoxButtons.YesNo,
+                    MessageBoxIcon.Question
+                );
+
+                if (respuesta == DialogResult.No)
+                    return;
+
+                try
+                {
+                    // Obtener el ID del usuario seleccionado
+                    int idUsuario = Convert.ToInt32(dgvUsuarios.CurrentRow.Cells["Id_usuario"].Value);
+
+                    // ELIMINAR DE LA BASE DE DATOS
+                    conectar();
+                    string sql = "DELETE FROM Usuarios WHERE Id_usuario = ?";
+                    using (OleDbCommand cmd = new OleDbCommand(sql, cn))
+                    {
+                        cmd.Parameters.AddWithValue("?", idUsuario);
+                        int filas = cmd.ExecuteNonQuery();
+
+                        if (filas > 0)
+                        {
+                            MessageBox.Show("Usuario eliminado correctamente de la base de datos.", "Éxito", MessageBoxButtons.OK, MessageBoxIcon.Information);
+                        }
+                        else
+                        {
+                            MessageBox.Show("No se encontró el usuario en la base de datos.", "Error", MessageBoxButtons.OK, MessageBoxIcon.Error);
+                        }
+                    }
+
+                    //ELIMINAR TAMBIÉN DE LA LISTA
+                    Usuarios eliminado = usuario.FirstOrDefault(u => u.Id_usuario == idUsuario);
+                    if (eliminado != null)
+                    {
+                        usuario.Remove(eliminado);
+                        actualizarGrilla();
+                    }
+                }
+                catch (Exception ex)
+                {
+                    MessageBox.Show("Error al eliminar: " + ex.Message, "Error", MessageBoxButtons.OK, MessageBoxIcon.Error);
+                }
+                finally
+                {
+                    desconectar();
+                }
+            }
+            else // modo "Cancelar"
+            {
+                btnAgregar.Text = "Agregar";
+                btnEliminar.Text = "Eliminar";
+                btnModificar.Text = "Modificar";
+                btnModificar.Visible = true;
+                btnAgregar.Visible = true;
+                limpiarGrilla(gbDatosPersonales);
+                bloquearControles(gbDatosPersonales);
+            }
+        }
+    
     }
 }

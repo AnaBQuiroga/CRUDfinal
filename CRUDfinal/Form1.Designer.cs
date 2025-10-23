@@ -31,7 +31,6 @@
             this.btnModificar = new System.Windows.Forms.Button();
             this.btnAgregar = new System.Windows.Forms.Button();
             this.btnEliminar = new System.Windows.Forms.Button();
-            this.btnCancelar = new System.Windows.Forms.Button();
             this.lblBuscar = new System.Windows.Forms.Label();
             this.cmbBuscar = new System.Windows.Forms.ComboBox();
             this.gbDatosPersonales = new System.Windows.Forms.GroupBox();
@@ -78,15 +77,7 @@
             this.btnEliminar.TabIndex = 2;
             this.btnEliminar.Text = "Eliminar";
             this.btnEliminar.UseVisualStyleBackColor = true;
-            // 
-            // btnCancelar
-            // 
-            this.btnCancelar.Location = new System.Drawing.Point(71, 262);
-            this.btnCancelar.Name = "btnCancelar";
-            this.btnCancelar.Size = new System.Drawing.Size(75, 23);
-            this.btnCancelar.TabIndex = 3;
-            this.btnCancelar.Text = "Cancelar";
-            this.btnCancelar.UseVisualStyleBackColor = true;
+            this.btnEliminar.Click += new System.EventHandler(this.btnEliminar_Click);
             // 
             // lblBuscar
             // 
@@ -121,7 +112,7 @@
             this.gbDatosPersonales.Controls.Add(this.lblNombre);
             this.gbDatosPersonales.Location = new System.Drawing.Point(193, 100);
             this.gbDatosPersonales.Name = "gbDatosPersonales";
-            this.gbDatosPersonales.Size = new System.Drawing.Size(576, 245);
+            this.gbDatosPersonales.Size = new System.Drawing.Size(576, 195);
             this.gbDatosPersonales.TabIndex = 6;
             this.gbDatosPersonales.TabStop = false;
             this.gbDatosPersonales.Text = "Datos Personales";
@@ -209,9 +200,9 @@
             // dgvUsuarios
             // 
             this.dgvUsuarios.ColumnHeadersHeightSizeMode = System.Windows.Forms.DataGridViewColumnHeadersHeightSizeMode.AutoSize;
-            this.dgvUsuarios.Location = new System.Drawing.Point(101, 362);
+            this.dgvUsuarios.Location = new System.Drawing.Point(101, 338);
             this.dgvUsuarios.Name = "dgvUsuarios";
-            this.dgvUsuarios.Size = new System.Drawing.Size(651, 186);
+            this.dgvUsuarios.Size = new System.Drawing.Size(651, 210);
             this.dgvUsuarios.TabIndex = 7;
             this.dgvUsuarios.RowEnter += new System.Windows.Forms.DataGridViewCellEventHandler(this.dgvUsuarios_RowEnter);
             // 
@@ -224,7 +215,6 @@
             this.Controls.Add(this.gbDatosPersonales);
             this.Controls.Add(this.cmbBuscar);
             this.Controls.Add(this.lblBuscar);
-            this.Controls.Add(this.btnCancelar);
             this.Controls.Add(this.btnEliminar);
             this.Controls.Add(this.btnAgregar);
             this.Controls.Add(this.btnModificar);
@@ -244,7 +234,6 @@
         private System.Windows.Forms.Button btnModificar;
         private System.Windows.Forms.Button btnAgregar;
         private System.Windows.Forms.Button btnEliminar;
-        private System.Windows.Forms.Button btnCancelar;
         private System.Windows.Forms.Label lblBuscar;
         private System.Windows.Forms.ComboBox cmbBuscar;
         private System.Windows.Forms.GroupBox gbDatosPersonales;
