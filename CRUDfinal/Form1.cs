@@ -10,6 +10,7 @@ using System.Text.RegularExpressions;
 using System.Threading.Tasks;
 using System.Windows.Forms;
 using static System.Windows.Forms.VisualStyles.VisualStyleElement.Button;
+using GroupBox = System.Windows.Forms.GroupBox;
 
 namespace CRUDfinal
 {
@@ -23,13 +24,17 @@ namespace CRUDfinal
         {
             InitializeComponent();
             this.CenterToScreen();
-            
+            cmbBuscar.KeyDown += cmbBuscar_KeyDown;
+
         }
 
         private void frmUsuarios_Load(object sender, EventArgs e)
         {
-            actualizarGrilla();
             
+            actualizarGrilla();
+            dgvUsuarios.DataSource = null;
+            
+            configurarComboBoxBusqueda(); //modo autocompletado y filtro de datos
         }
 
         void conectar()
@@ -103,19 +108,12 @@ namespace CRUDfinal
 
         void actualizarGrilla()
         {
-
             bloquearControles(gbDatosPersonales);
             dgvUsuarios.DataSource = null;
             buscarPersonas();
             dgvUsuarios.DataSource = usuario;
             dgvUsuarios.Columns["Id_usuario"].Visible = false;
-
-            cmbBuscar.Items.Clear();
-            foreach (var u in usuario)
-            {
-                cmbBuscar.Items.Add(u.Nombre);
-            }
-
+            actualizarComboBox();
         }
 
         void limpiarGrilla(Control control)
@@ -123,8 +121,16 @@ namespace CRUDfinal
             foreach (Control item in control.Controls)
             {
                 if (item is TextBox txt) txt.Text = null;
-                //if (item is CheckBox chk) chk.Checked = false;
-                //if (item is GroupBox || item is Panel) limpiarGrilla((Control)item);
+                if (item is GroupBox || item is Panel) limpiarGrilla(item);
+            }
+        }
+
+        void actualizarComboBox()
+        {
+            cmbBuscar.Items.Clear();
+            foreach (var u in usuario)
+            {
+                cmbBuscar.Items.Add(u.Nombre);
             }
         }
 
@@ -384,19 +390,20 @@ namespace CRUDfinal
 
         private void cmbBuscar_SelectedIndexChanged(object sender, EventArgs e)
         {
-            string nombreSeleccionado = cmbBuscar.SelectedItem.ToString();
+            string textoSeleccionado = cmbBuscar.SelectedItem?.ToString();
+            if (string.IsNullOrWhiteSpace(textoSeleccionado)) return;
 
-            Usuarios seleccinado = usuario.FirstOrDefault(u => u.Nombre == nombreSeleccionado);
-            if (seleccinado != null)
+            Usuarios seleccionado = usuario
+                .FirstOrDefault(u => u.Nombre.Equals(textoSeleccionado, StringComparison.OrdinalIgnoreCase)
+                                  || u.Apellido.Equals(textoSeleccionado, StringComparison.OrdinalIgnoreCase));
+
+            if (seleccionado != null)
             {
-                
-                txtNombre.Text = seleccinado.Nombre;
-                txtApellido.Text = seleccinado.Apellido;
-                txtDNI.Text = seleccinado.DNI.ToString();
-                txtDireccion.Text = seleccinado.Direccion;
-                txtTelefono.Text = seleccinado.Telefono.ToString();
-
-
+                txtNombre.Text = seleccionado.Nombre;
+                txtApellido.Text = seleccionado.Apellido;
+                txtDNI.Text = seleccionado.DNI.ToString();
+                txtDireccion.Text = seleccionado.Direccion;
+                txtTelefono.Text = seleccionado.Telefono.ToString();
             }
         }
 
@@ -473,6 +480,67 @@ namespace CRUDfinal
                 bloquearControles(gbDatosPersonales);
             }
         }
-    
+
+
+        // CONFIGURAR AUTOCOMPLETADO
+        void configurarComboBoxBusqueda()
+        {
+            cmbBuscar.AutoCompleteMode = AutoCompleteMode.SuggestAppend;
+            cmbBuscar.AutoCompleteSource = AutoCompleteSource.CustomSource;
+            cmbBuscar.TextChanged += cmbBuscar_TextChanged_1; // evento para filtrar mientras escribe
+        }
+
+        private void cmbBuscar_TextChanged_1(object sender, EventArgs e)
+        {
+            string texto = cmbBuscar.Text.ToLower();
+
+            if (string.IsNullOrWhiteSpace(texto))
+            {
+                dgvUsuarios.DataSource = null;
+                return;
+            }
+
+            var coincidencias = usuario
+                     .Where(u => u.Nombre.ToLower().StartsWith(texto)
+                              || u.Apellido.ToLower().StartsWith(texto)
+                              || u.DNI.ToString().StartsWith(texto))
+                     .ToList();
+
+            // Actualizar el autocompletado
+            AutoCompleteStringCollection sugerencias = new AutoCompleteStringCollection();
+            sugerencias.AddRange(coincidencias.Select(u => u.Nombre).ToArray());
+            sugerencias.AddRange(coincidencias.Select(u => u.Apellido).ToArray());
+            sugerencias.AddRange(coincidencias.Select(u => u.DNI.ToString()).ToArray());
+            cmbBuscar.AutoCompleteCustomSource = sugerencias;
+
+            // Mostrar coincidencias en el DataGridView
+            dgvUsuarios.DataSource = null;
+            dgvUsuarios.DataSource = coincidencias;
+
+            if (dgvUsuarios.Columns.Contains("Id_usuario"))
+                dgvUsuarios.Columns["Id_usuario"].Visible = false;
+        }
+
+        private void cmbBuscar_KeyDown(object sender, KeyEventArgs e)
+        {
+            if (e.KeyCode == Keys.Enter)
+            {
+                string texto = cmbBuscar.Text.Trim();
+
+                Usuarios seleccionado = usuario
+                    .FirstOrDefault(u => u.Nombre.Equals(texto, StringComparison.OrdinalIgnoreCase)
+                                      || u.Apellido.Equals(texto, StringComparison.OrdinalIgnoreCase) 
+                                      || u.DNI.ToString()==texto);
+
+                if (seleccionado != null)
+                {
+                    txtNombre.Text = seleccionado.Nombre;
+                    txtApellido.Text = seleccionado.Apellido;
+                    txtDNI.Text = seleccionado.DNI.ToString();
+                    txtDireccion.Text = seleccionado.Direccion;
+                    txtTelefono.Text = seleccionado.Telefono.ToString();
+                }
+            }
+        }
     }
 }

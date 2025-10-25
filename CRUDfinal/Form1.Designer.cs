@@ -97,6 +97,8 @@
             this.cmbBuscar.Size = new System.Drawing.Size(121, 21);
             this.cmbBuscar.TabIndex = 5;
             this.cmbBuscar.SelectedIndexChanged += new System.EventHandler(this.cmbBuscar_SelectedIndexChanged);
+            this.cmbBuscar.TextChanged += new System.EventHandler(this.cmbBuscar_TextChanged_1);
+            this.cmbBuscar.KeyDown += new System.Windows.Forms.KeyEventHandler(this.cmbBuscar_KeyDown);
             // 
             // gbDatosPersonales
             // 
