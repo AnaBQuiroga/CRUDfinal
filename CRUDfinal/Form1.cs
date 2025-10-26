@@ -17,12 +17,14 @@ namespace CRUDfinal
 {
     public partial class frmUsuarios : Form
     {
-        
+        #region Conexión y variables
+
         private string conexionAccess = @"Provider=Microsoft.ACE.OLEDB.12.0; Data Source= C:\Users\Admin\Documents\BDfinal1.accdb";
         private OleDbConnection cn;
         List<Usuarios> usuario = new List<Usuarios>();
-
+        
         int indiceSeleccionado = -1; // variable de clase 
+        #endregion
         public frmUsuarios()
         {
             InitializeComponent();
@@ -32,133 +34,12 @@ namespace CRUDfinal
 
         private void frmUsuarios_Load(object sender, EventArgs e)
         {
-            
             actualizarGrilla();
             dgvUsuarios.DataSource = null;
-            
             configurarComboBoxBusqueda(); //modo autocompletado y filtro de datos
         }
 
-        void conectar()
-        {
-            try
-            {
-                cn = new OleDbConnection(conexionAccess);
-                cn.Open();
-            }
-            catch (Exception ex)
-            {
-                throw new Exception("Error al conectar la base de datos: " + ex.Message);
-            }
-
-        }
-
-        void desconectar()
-        {
-
-            try
-            {
-                if (cn != null && cn.State == ConnectionState.Open)
-                {
-                    cn.Close();
-                    cn.Dispose();
-                }
-
-
-            }
-            catch (Exception ex)
-            {
-                throw new Exception("Error al desconectar la base de datos: " + ex.Message);
-            }
-        }
-
-        List<Usuarios> buscarPersonas()
-        {
-            usuario.Clear();
-            try
-            {
-                conectar();
-                string sql = "Select * From Usuarios ORDER BY Id_usuario ASC";
-                
-                using (OleDbCommand cmd = new OleDbCommand(sql, cn))
-                using (OleDbDataReader reader = cmd.ExecuteReader())
-                {
-                    while (reader.Read())
-                    {
-                        usuario.Add(new Usuarios
-                        {
-                            Id_usuario= Convert.ToInt32(reader["Id_usuario"]),
-                            Apellido = reader["Apellido"].ToString() ?? string.Empty,
-                            Nombre = reader["Nombre"].ToString() ?? string.Empty,
-                            DNI = Convert.ToInt32(reader["DNI"]),
-                            Telefono= Convert.ToInt32(reader["Telefono"]),
-                            Direccion = reader["Direccion"].ToString() ?? string.Empty
-                        });
-                    }
-                }
-            }
-            catch (Exception ex)
-            {
-                throw new Exception("Error al buscar personas: " + ex.Message);
-            }
-            finally
-            {
-                desconectar();
-            }
-            return usuario;
-        }
-
-        void actualizarGrilla()
-        {
-            bloquearControles(gbDatosPersonales);
-            dgvUsuarios.DataSource = null;
-            buscarPersonas();
-            dgvUsuarios.DataSource = usuario;
-            dgvUsuarios.Columns["Id_usuario"].Visible = false;
-            actualizarComboBox();
-        }
-
-        void limpiarGrilla(Control control)
-        {
-            foreach (Control item in control.Controls)
-            {
-                if (item is TextBox txt) txt.Text = null;
-                if (item is GroupBox || item is Panel) limpiarGrilla(item);
-            }
-        }
-
-        void actualizarComboBox()
-        {
-            cmbBuscar.Items.Clear();
-            var sugerencias = new AutoCompleteStringCollection();
-            foreach (var u in usuario)
-            {
-                //cmbBuscar.Items.Add(u.Nombre +" "+ u.Apellido +" "+ u.DNI.ToString());
-                sugerencias.Add(u.Nombre);
-                sugerencias.Add(u.Nombre);
-                sugerencias.Add(u.Apellido);
-                sugerencias.Add(u.DNI.ToString());
-            }
-            cmbBuscar.AutoCompleteCustomSource = sugerencias;
-        }
-
-        private void bloquearControles(Control control)
-        {
-            foreach (Control item in control.Controls)
-            {
-                if (item is TextBox txt) txt.Enabled = false;
-
-            }
-        }
-
-        private void desbloquearControles(Control contrl)
-        {
-            foreach (Control item in contrl.Controls)
-            {
-                if (item is TextBox txt) txt.Enabled = true;
-            }
-        }
-
+        #region EVENTOS
         private void dgvUsuarios_RowEnter(object sender, DataGridViewCellEventArgs e)
         {
             if (dgvUsuarios.SelectedRows.Count > 0)
@@ -174,7 +55,7 @@ namespace CRUDfinal
 
         private void btnModificar_Click(object sender, EventArgs e)
         {
-            if (btnModificar.Text == "Modificar")
+            if (btnModificar.Text == "Modificar") //verificar la selección
             {
                 if (dgvUsuarios.SelectedRows.Count == 0)
                 {
@@ -183,14 +64,11 @@ namespace CRUDfinal
                 }
 
                 indiceSeleccionado = dgvUsuarios.SelectedRows[0].Index;
-
                 desbloquearControles(gbDatosPersonales);
                 txtDNI.Enabled = false;
-
                 btnModificar.Text = "Guardar";
                 btnAgregar.Visible = false;
                 btnEliminar.Text = "Cancelar";
-
                 txtNombre.Focus();
             }
             else
@@ -231,40 +109,6 @@ namespace CRUDfinal
         
         }
 
-        void modificarUsuario(string nombre, string apellido, int telefono, int dni, string direccion)
-        {
-            try
-            {
-                conectar();
-
-                string sql = "UPDATE Usuarios SET Nombre = ?, Apellido = ?, Telefono = ?, Direccion = ? WHERE DNI=?";
-
-                using (OleDbCommand cmd = new OleDbCommand(sql, cn))
-                {
-                    cmd.Parameters.AddWithValue("?", nombre);
-                    cmd.Parameters.AddWithValue("?", apellido);
-                    cmd.Parameters.AddWithValue("?", telefono);
-                    cmd.Parameters.AddWithValue("?", direccion);
-                    cmd.Parameters.AddWithValue("?", dni);
-
-                    int filasAfectadas = cmd.ExecuteNonQuery();
-
-                    if (filasAfectadas == 0)
-                    {
-                        MessageBox.Show("No se encontró ningún usuario con ese DNI para modificar.", "Aviso", MessageBoxButtons.OK, MessageBoxIcon.Information);
-                    }
-                }
-            }
-            catch (Exception ex)
-            {
-                MessageBox.Show("Error al modificar: " + ex.Message, "Error", MessageBoxButtons.OK, MessageBoxIcon.Error);
-            }
-            finally
-            {
-                desconectar();
-            }
-        }
-
         private void btnAgregar_Click(object sender, EventArgs e)
         {
             if (btnAgregar.Text == "Agregar")
@@ -273,9 +117,7 @@ namespace CRUDfinal
                 btnModificar.Visible = false;
                 btnEliminar.Text = "Cancelar";
 
-
                 desbloquearControles(gbDatosPersonales);
-                
                 limpiarGrilla(gbDatosPersonales);
                 txtNombre.Focus();
             }
@@ -312,8 +154,6 @@ namespace CRUDfinal
                     return;
                 }
 
-                
-
                 // Crear nuevo usuario
                 Usuarios nuevoUsuario = new Usuarios()
                 {
@@ -324,8 +164,9 @@ namespace CRUDfinal
                     Telefono = Convert.ToInt32(txtTelefono.Text),
                     Direccion = txtDireccion.Text
                 };
+                usuario.Add(nuevoUsuario);//Agregar usuario a la lista
 
-                usuario.Add(nuevoUsuario);
+                //Agregar usuario a la Base de Datos
                 insertarUsuario(txtNombre.Text, txtApellido.Text,Convert.ToInt32(txtTelefono.Text), Convert.ToInt32(txtDNI.Text),txtDireccion.Text);
                 MessageBox.Show("Se inserto correctamente el nuevo usuario", "Insertar usuario", MessageBoxButtons.OK, MessageBoxIcon.Information);
 
@@ -336,62 +177,7 @@ namespace CRUDfinal
                 bloquearControles(this);
                 limpiarGrilla(gbDatosPersonales);
                 actualizarGrilla(); // Esto actualiza DataGridView y ComboBox
-                
                 dgvUsuarios.Focus();
-            }
-        }
-
-        private bool ExisteDNI(string dni)
-        {
-            try
-            {
-                conectar();
-                string sql = "SELECT COUNT(*) FROM Usuarios WHERE DNI = ?";
-                using (OleDbCommand cmd = new OleDbCommand(sql, cn))
-                {
-                    cmd.Parameters.AddWithValue("?", Convert.ToInt32(dni));
-                    int count = (int)cmd.ExecuteScalar();
-                    return count > 0;
-                }
-            }
-            catch (Exception)
-            {
-                // Si el dni coincide con uno existente se puede intentar de nuevo la operación
-                return false;
-            }
-            finally
-            {
-                desconectar();
-            }
-        }
-        private void insertarUsuario(string nombre, string apellido, int telefono, int dni, string direccion)
-        {
-            
-            try
-            {
-                conectar();
-                string sql = "INSERT INTO Usuarios (Nombre, Apellido, Telefono, DNI, Direccion) VALUES (?,?,?,?,?)";
-                
-                using (OleDbCommand cmd =new OleDbCommand (sql, cn))
-                {
-                    
-                    cmd.Parameters.AddWithValue("?", nombre);
-                    cmd.Parameters.AddWithValue("?", apellido);
-                    cmd.Parameters.AddWithValue("?", telefono);
-                    cmd.Parameters.AddWithValue("?",dni);
-                    cmd.Parameters.AddWithValue("?", direccion);
-
-                    cmd.ExecuteNonQuery();
-                }
-
-            }
-            catch (Exception ex)
-            {
-                throw new Exception("Error al insertar" + ex.Message);
-            }
-            finally
-            {
-                desconectar();
             }
         }
 
@@ -400,10 +186,10 @@ namespace CRUDfinal
             string textoSeleccionado = cmbBuscar.SelectedItem?.ToString();
             if (string.IsNullOrWhiteSpace(textoSeleccionado)) return;
 
-            Usuarios seleccionado = usuario
+            Usuarios seleccionado = usuario // Busca coincidencias por nombre o apellido en la lista de usuarios
                 .FirstOrDefault(u => u.Nombre.Equals(textoSeleccionado, StringComparison.OrdinalIgnoreCase)
                                   || u.Apellido.Equals(textoSeleccionado, StringComparison.OrdinalIgnoreCase));
-
+            // Si encuentra un usuario, muestra sus datos en el formulario
             if (seleccionado != null)
             {
                 txtNombre.Text = seleccionado.Nombre;
@@ -479,30 +265,23 @@ namespace CRUDfinal
             }
             else // modo "Cancelar"
             {
+                limpiarGrilla(gbDatosPersonales);
+                dgvUsuarios.ClearSelection(); //limpiar usuario seleccionado del dgv
+                indiceSeleccionado=-1; //resetear el indice/referencia al usuario seleccionado
                 btnAgregar.Text = "Agregar";
                 btnEliminar.Text = "Eliminar";
                 btnModificar.Text = "Modificar";
                 btnModificar.Visible = true;
                 btnAgregar.Visible = true;
-                limpiarGrilla(gbDatosPersonales);
                 bloquearControles(gbDatosPersonales);
             }
         }
-
-
-        // CONFIGURAR AUTOCOMPLETADO
-        void configurarComboBoxBusqueda()
-        {
-            cmbBuscar.AutoCompleteMode = AutoCompleteMode.SuggestAppend;
-            cmbBuscar.AutoCompleteSource = AutoCompleteSource.CustomSource;
-            cmbBuscar.TextChanged += cmbBuscar_TextChanged_1; // evento para filtrar mientras escribe
-        }
-
+       
         private void cmbBuscar_TextChanged_1(object sender, EventArgs e)
         {
             string texto = cmbBuscar.Text.ToLower();
 
-            if (string.IsNullOrWhiteSpace(texto))
+            if (string.IsNullOrWhiteSpace(texto))// Si el campo está vacío, limpia la grilla y los datos del GroupBox
             {
                 dgvUsuarios.DataSource = null;
                 limpiarGrilla(gbDatosPersonales);
@@ -524,10 +303,10 @@ namespace CRUDfinal
         }
 
         private void cmbBuscar_KeyDown(object sender, KeyEventArgs e)
-        {
+        {// Al presionar Enter en el ComboBox, busca coincidencias y muestra los datos del usuario
             if (e.KeyCode == Keys.Enter)
             {
-                string texto = cmbBuscar.Text.Trim();
+                string texto = cmbBuscar.Text.Trim(); // Obtiene el texto ingresado sin espacios
 
                 Usuarios seleccionado = usuario
                     .FirstOrDefault(u => u.Nombre.Equals(texto, StringComparison.OrdinalIgnoreCase)
@@ -544,7 +323,6 @@ namespace CRUDfinal
                 }
             }
         }
-
         private void chkMostrarTodos_CheckedChanged(object sender, EventArgs e)
         {
             if (chkMostrarTodos.Checked)
@@ -558,5 +336,223 @@ namespace CRUDfinal
                 cmbBuscar_TextChanged_1(null, null);
             }
         }
+        #endregion
+
+        #region Métodos de conexión
+
+        void conectar()
+        {
+            try
+            {
+                cn = new OleDbConnection(conexionAccess);
+                cn.Open();
+            }
+            catch (Exception ex)
+            {
+                throw new Exception("Error al conectar la base de datos: " + ex.Message);
+            }
+
+        }
+
+        void desconectar()
+        {
+
+            try
+            {
+                if (cn != null && cn.State == ConnectionState.Open)
+                {
+                    cn.Close();
+                    cn.Dispose();
+                }
+
+
+            }
+            catch (Exception ex)
+            {
+                throw new Exception("Error al desconectar la base de datos: " + ex.Message);
+            }
+        }
+        #endregion
+
+        #region Métodos de CRUD
+        List<Usuarios> buscarPersonas()
+        {
+            usuario.Clear();
+            try
+            {
+                conectar();
+                string sql = "Select * From Usuarios ORDER BY Id_usuario ASC";
+
+                using (OleDbCommand cmd = new OleDbCommand(sql, cn))
+                using (OleDbDataReader reader = cmd.ExecuteReader())
+                {
+                    while (reader.Read())
+                    {
+                        usuario.Add(new Usuarios
+                        {
+                            Id_usuario = Convert.ToInt32(reader["Id_usuario"]),
+                            Apellido = reader["Apellido"].ToString() ?? string.Empty,
+                            Nombre = reader["Nombre"].ToString() ?? string.Empty,
+                            DNI = Convert.ToInt32(reader["DNI"]),
+                            Telefono = Convert.ToInt32(reader["Telefono"]),
+                            Direccion = reader["Direccion"].ToString() ?? string.Empty
+                        });
+                    }
+                }
+            }
+            catch (Exception ex)
+            {
+                throw new Exception("Error al buscar personas: " + ex.Message);
+            }
+            finally
+            {
+                desconectar();
+            }
+            return usuario;
+        }
+
+        private void insertarUsuario(string nombre, string apellido, int telefono, int dni, string direccion)
+        {
+
+            try
+            {
+                conectar();
+                string sql = "INSERT INTO Usuarios (Nombre, Apellido, Telefono, DNI, Direccion) VALUES (?,?,?,?,?)";
+
+                using (OleDbCommand cmd = new OleDbCommand(sql, cn))
+                {
+
+                    cmd.Parameters.AddWithValue("?", nombre);
+                    cmd.Parameters.AddWithValue("?", apellido);
+                    cmd.Parameters.AddWithValue("?", telefono);
+                    cmd.Parameters.AddWithValue("?", dni);
+                    cmd.Parameters.AddWithValue("?", direccion);
+
+                    cmd.ExecuteNonQuery();
+                }
+
+            }
+            catch (Exception ex)
+            {
+                throw new Exception("Error al insertar" + ex.Message);
+            }
+            finally
+            {
+                desconectar();
+            }
+        }
+        void modificarUsuario(string nombre, string apellido, int telefono, int dni, string direccion)
+        {
+            try
+            {
+                conectar();
+
+                string sql = "UPDATE Usuarios SET Nombre = ?, Apellido = ?, Telefono = ?, Direccion = ? WHERE DNI=?";
+
+                using (OleDbCommand cmd = new OleDbCommand(sql, cn))
+                {
+                    cmd.Parameters.AddWithValue("?", nombre);
+                    cmd.Parameters.AddWithValue("?", apellido);
+                    cmd.Parameters.AddWithValue("?", telefono);
+                    cmd.Parameters.AddWithValue("?", direccion);
+                    cmd.Parameters.AddWithValue("?", dni);
+
+                    int filasAfectadas = cmd.ExecuteNonQuery();
+
+                    if (filasAfectadas == 0)
+                    {
+                        MessageBox.Show("No se encontró ningún usuario con ese DNI para modificar.", "Aviso", MessageBoxButtons.OK, MessageBoxIcon.Information);
+                    }
+                }
+            }
+            catch (Exception ex)
+            {
+                MessageBox.Show("Error al modificar: " + ex.Message, "Error", MessageBoxButtons.OK, MessageBoxIcon.Error);
+            }
+            finally
+            {
+                desconectar();
+            }
+        }
+        private bool ExisteDNI(string dni)
+        {
+            try
+            {
+                conectar();
+                string sql = "SELECT COUNT(*) FROM Usuarios WHERE DNI = ?";
+                using (OleDbCommand cmd = new OleDbCommand(sql, cn))
+                {
+                    cmd.Parameters.AddWithValue("?", Convert.ToInt32(dni));
+                    int count = (int)cmd.ExecuteScalar();
+                    return count > 0;
+                }
+            }
+            catch (Exception)
+            {
+                // Si el dni coincide con uno existente se puede intentar de nuevo la operación
+                return false;
+            }
+            finally
+            {
+                desconectar();
+            }
+        }
+
+        #endregion
+
+        #region Métodos de interfaz
+        void actualizarGrilla()
+        {
+            bloquearControles(gbDatosPersonales);
+            dgvUsuarios.DataSource = null;
+            buscarPersonas();
+            dgvUsuarios.DataSource = usuario;
+            dgvUsuarios.Columns["Id_usuario"].Visible = false;
+            actualizarComboBox();
+        }
+        void limpiarGrilla(Control control)
+        {
+            foreach (Control item in control.Controls)
+            {
+                if (item is TextBox txt) txt.Text = null;
+                if (item is GroupBox || item is Panel) limpiarGrilla(item);
+            }
+        }
+        void actualizarComboBox()
+        {
+            cmbBuscar.Items.Clear();
+            var sugerencias = new AutoCompleteStringCollection();
+            foreach (var u in usuario)
+            {
+                //cmbBuscar.Items.Add(u.Nombre +" "+ u.Apellido +" "+ u.DNI.ToString());
+                sugerencias.Add(u.Nombre);
+                sugerencias.Add(u.Nombre);
+                sugerencias.Add(u.Apellido);
+                sugerencias.Add(u.DNI.ToString());
+            }
+            cmbBuscar.AutoCompleteCustomSource = sugerencias;
+        }
+        private void bloquearControles(Control control)
+        {
+            foreach (Control item in control.Controls)
+            {
+                if (item is TextBox txt) txt.Enabled = false;
+            }
+        }
+        private void desbloquearControles(Control contrl)
+        {
+            foreach (Control item in contrl.Controls)
+            {
+                if (item is TextBox txt) txt.Enabled = true;
+            }
+        }
+        void configurarComboBoxBusqueda()// CONFIGURAR AUTOCOMPLETADO
+        {
+            cmbBuscar.AutoCompleteMode = AutoCompleteMode.SuggestAppend;
+            cmbBuscar.AutoCompleteSource = AutoCompleteSource.CustomSource;
+            cmbBuscar.TextChanged += cmbBuscar_TextChanged_1; // evento para filtrar mientras escribe
+        }
+        #endregion
+
     }
 }
