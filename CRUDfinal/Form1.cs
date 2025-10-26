@@ -5,6 +5,7 @@ using System.Data;
 using System.Data.OleDb;
 using System.Drawing;
 using System.Linq;
+using System.Runtime.InteropServices;
 using System.Text;
 using System.Text.RegularExpressions;
 using System.Threading.Tasks;
@@ -20,12 +21,13 @@ namespace CRUDfinal
         private string conexionAccess = @"Provider=Microsoft.ACE.OLEDB.12.0; Data Source= C:\Users\Admin\Documents\BDfinal1.accdb";
         private OleDbConnection cn;
         List<Usuarios> usuario = new List<Usuarios>();
+
+        int indiceSeleccionado = -1; // variable de clase 
         public frmUsuarios()
         {
             InitializeComponent();
             this.CenterToScreen();
             cmbBuscar.KeyDown += cmbBuscar_KeyDown;
-
         }
 
         private void frmUsuarios_Load(object sender, EventArgs e)
@@ -128,10 +130,16 @@ namespace CRUDfinal
         void actualizarComboBox()
         {
             cmbBuscar.Items.Clear();
+            var sugerencias = new AutoCompleteStringCollection();
             foreach (var u in usuario)
             {
-                cmbBuscar.Items.Add(u.Nombre);
+                //cmbBuscar.Items.Add(u.Nombre +" "+ u.Apellido +" "+ u.DNI.ToString());
+                sugerencias.Add(u.Nombre);
+                sugerencias.Add(u.Nombre);
+                sugerencias.Add(u.Apellido);
+                sugerencias.Add(u.DNI.ToString());
             }
+            cmbBuscar.AutoCompleteCustomSource = sugerencias;
         }
 
         private void bloquearControles(Control control)
@@ -164,7 +172,6 @@ namespace CRUDfinal
             }
         }
 
-        int indiceSeleccionado = -1; // variable de clase 
         private void btnModificar_Click(object sender, EventArgs e)
         {
             if (btnModificar.Text == "Modificar")
@@ -458,6 +465,7 @@ namespace CRUDfinal
                     {
                         usuario.Remove(eliminado);
                         actualizarGrilla();
+                        limpiarGrilla(gbDatosPersonales);
                     }
                 }
                 catch (Exception ex)
@@ -497,6 +505,7 @@ namespace CRUDfinal
             if (string.IsNullOrWhiteSpace(texto))
             {
                 dgvUsuarios.DataSource = null;
+                limpiarGrilla(gbDatosPersonales);
                 return;
             }
 
@@ -505,13 +514,6 @@ namespace CRUDfinal
                               || u.Apellido.ToLower().StartsWith(texto)
                               || u.DNI.ToString().StartsWith(texto))
                      .ToList();
-
-            // Actualizar el autocompletado
-            AutoCompleteStringCollection sugerencias = new AutoCompleteStringCollection();
-            sugerencias.AddRange(coincidencias.Select(u => u.Nombre).ToArray());
-            sugerencias.AddRange(coincidencias.Select(u => u.Apellido).ToArray());
-            sugerencias.AddRange(coincidencias.Select(u => u.DNI.ToString()).ToArray());
-            cmbBuscar.AutoCompleteCustomSource = sugerencias;
 
             // Mostrar coincidencias en el DataGridView
             dgvUsuarios.DataSource = null;
@@ -540,6 +542,20 @@ namespace CRUDfinal
                     txtDireccion.Text = seleccionado.Direccion;
                     txtTelefono.Text = seleccionado.Telefono.ToString();
                 }
+            }
+        }
+
+        private void chkMostrarTodos_CheckedChanged(object sender, EventArgs e)
+        {
+            if (chkMostrarTodos.Checked)
+            {
+                // Muestra todos los usuarios sin filtrar
+                actualizarGrilla();
+            }
+            else
+            {
+                // Si se desmarca, vuelve a aplicar el filtro actual (si hay texto)
+                cmbBuscar_TextChanged_1(null, null);
             }
         }
     }

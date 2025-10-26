@@ -45,6 +45,7 @@
             this.lblApellido = new System.Windows.Forms.Label();
             this.lblNombre = new System.Windows.Forms.Label();
             this.dgvUsuarios = new System.Windows.Forms.DataGridView();
+            this.chkMostrarTodos = new System.Windows.Forms.CheckBox();
             this.gbDatosPersonales.SuspendLayout();
             ((System.ComponentModel.ISupportInitialize)(this.dgvUsuarios)).BeginInit();
             this.SuspendLayout();
@@ -208,11 +209,23 @@
             this.dgvUsuarios.TabIndex = 7;
             this.dgvUsuarios.RowEnter += new System.Windows.Forms.DataGridViewCellEventHandler(this.dgvUsuarios_RowEnter);
             // 
+            // chkMostrarTodos
+            // 
+            this.chkMostrarTodos.AutoSize = true;
+            this.chkMostrarTodos.Location = new System.Drawing.Point(615, 315);
+            this.chkMostrarTodos.Name = "chkMostrarTodos";
+            this.chkMostrarTodos.Size = new System.Drawing.Size(139, 17);
+            this.chkMostrarTodos.TabIndex = 8;
+            this.chkMostrarTodos.Text = "Lista Completa Usuarios";
+            this.chkMostrarTodos.UseVisualStyleBackColor = true;
+            this.chkMostrarTodos.CheckedChanged += new System.EventHandler(this.chkMostrarTodos_CheckedChanged);
+            // 
             // frmUsuarios
             // 
             this.AutoScaleDimensions = new System.Drawing.SizeF(6F, 13F);
             this.AutoScaleMode = System.Windows.Forms.AutoScaleMode.Font;
             this.ClientSize = new System.Drawing.Size(800, 560);
+            this.Controls.Add(this.chkMostrarTodos);
             this.Controls.Add(this.dgvUsuarios);
             this.Controls.Add(this.gbDatosPersonales);
             this.Controls.Add(this.cmbBuscar);
@@ -250,6 +263,7 @@
         private System.Windows.Forms.Label lblDireccion;
         private System.Windows.Forms.Label lblDNI;
         private System.Windows.Forms.DataGridView dgvUsuarios;
+        private System.Windows.Forms.CheckBox chkMostrarTodos;
     }
 }
 
