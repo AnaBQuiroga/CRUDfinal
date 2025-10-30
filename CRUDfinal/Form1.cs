@@ -34,9 +34,13 @@ namespace CRUDfinal
 
         private void frmUsuarios_Load(object sender, EventArgs e)
         {
+            AplicarEfectosHover(btnAgregar, Color.DeepPink, Color.LightPink);
+            AplicarEfectosHover(btnModificar, Color.DarkOrchid, Color.Plum);
+            AplicarEfectosHover(btnEliminar, Color.MediumVioletRed, Color.HotPink);
             actualizarGrilla();
             dgvUsuarios.DataSource = null;
             configurarComboBoxBusqueda(); //modo autocompletado y filtro de datos
+            
         }
 
         #region EVENTOS
@@ -553,6 +557,19 @@ namespace CRUDfinal
             cmbBuscar.TextChanged += cmbBuscar_TextChanged_1; // evento para filtrar mientras escribe
         }
         #endregion
+
+        #region Estilo de Form
+
+        private void AplicarEfectosHover(Button boton, Color colorBase, Color colorHover)
+        {
+            boton.BackColor = colorBase;
+            boton.FlatStyle = FlatStyle.Flat;
+            boton.MouseEnter += (s, e) => boton.BackColor = colorHover;
+            boton.MouseLeave += (s, e) => boton.BackColor = colorBase;
+        }
+
+        #endregion
+
 
     }
 }
