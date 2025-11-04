@@ -83,8 +83,13 @@ namespace CRUDfinal
                     return;
                 }
 
+                if (!Regex.IsMatch(txtTelefono.Text, @"^11\d{8}$"))
+                {
+                    MessageBox.Show("El teléfono debe comenzar con 11 y tener 10 dígitos en total.", "Error", MessageBoxButtons.OK, MessageBoxIcon.Warning);
+                    return;
+                }
+
                 // Actualizar el usuario en la lista
-                
                 usuario[indiceSeleccionado].Nombre = txtNombre.Text;
                 usuario[indiceSeleccionado].Apellido = txtApellido.Text;
                 usuario[indiceSeleccionado].Telefono = Convert.ToInt32(txtTelefono.Text);
